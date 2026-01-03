@@ -1,6 +1,7 @@
 ;;; lexer-number-test.scm - Goldfix 数字词法分析器单元测试
 
 (import (liii check)
+        (liii list)
         (goldfix lexer))
 
 ;; 设置测试模式
@@ -9,6 +10,7 @@
 ;; ============================================
 ;; 测试辅助函数
 ;; ============================================
+
 
 ;; 测试单个数字
 (define (test-single-number input expected-lexeme expected-value)
@@ -23,8 +25,8 @@
       (let ((eof-token (lexer-next-token lexer)))
         (check (eof-token? eof-token) => #t)))))
 
-;; 测试多个数字
-(define (test-multiple-numbers input expected-tokens)
+;; 测试多个数字（包含WHITESPACE token）
+(define (test-multiple-numbers input expected-number-tokens)
   (let ((lexer (make-lexer input))
         (tokens '()))
     (let loop ()
@@ -33,14 +35,16 @@
         (unless (eof-token? token)
           (loop))))
     (let ((actual-tokens (reverse (cdr tokens)))) ; 去掉最后的 EOF
-      (check (length actual-tokens) => (length expected-tokens))
-      (for-each
-       (lambda (actual expected)
-         (check (number-token? actual) => #t)
-         (check (token-lexeme actual) => (car expected))
-         (check (token-value actual) => (cadr expected)))
-       actual-tokens
-       expected-tokens))))
+      ;; 从实际token中提取数字token
+      (let ((actual-number-tokens (filter number-token? actual-tokens)))
+        (check (length actual-number-tokens) => (length expected-number-tokens))
+        (for-each
+         (lambda (actual expected)
+           (check (number-token? actual) => #t)
+           (check (token-lexeme actual) => (car expected))
+           (check (token-value actual) => (cadr expected)))
+         actual-number-tokens
+         expected-number-tokens)))))
 
 ;; ============================================
 ;; 测试用例开始
@@ -100,21 +104,28 @@
     (check (token-column token2) => 5)  ; "123 " 之后
     (check (token-offset token2) => 4)))
 
-;; 测试 8: 缩进信息（更新为包含 NEWLINE token）
+;; 测试 8: 缩进信息（更新为包含 NEWLINE 和 WHITESPACE token）
 (let ((lexer (make-lexer "  123\n  456")))
+  ;; 第一个数字（前面有两个空格）
   (let ((token1 (lexer-next-token lexer)))
     (check (number-token? token1) => #t)
     (check (token-lexeme token1) => "123")
     (check (token-indent token1) => 0)  ; 第一行没有前导空格时 indent 为 0
     (check (token-leading-ws token1) => "  "))
+  ;; 换行符
   (let ((newline-token (lexer-next-token lexer)))
     (check (newline-token? newline-token) => #t)
     (check (token-lexeme newline-token) => "\n"))
+  ;; 第二行的前导空格（WHITESPACE token）
+  (let ((ws-token (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token) => #t)
+    (check (token-lexeme ws-token) => "  "))
+  ;; 第二个数字
   (let ((token2 (lexer-next-token lexer)))
     (check (number-token? token2) => #t)
     (check (token-lexeme token2) => "456")
     (check (token-indent token2) => 2)  ; 第二行有前导空格，indent 为 2
-    (check (token-leading-ws token2) => "  ")))
+    (check (token-leading-ws token2) => "")))  ; 前导空格已经生成了 WHITESPACE token
 
 ;; 测试 9: 错误处理（非数字字符）
 (let ((lexer (make-lexer "abc")))
@@ -123,17 +134,28 @@
     (check (token-lexeme token) => "abc")
     (check (token-has-error? token) => #f)))
 
-;; 测试 10: 混合内容（数字和标识符）
+;; 测试 10: 混合内容（数字和标识符，包含WHITESPACE token）
 (let ((lexer (make-lexer "123 x 456")))
+  ;; 第一个数字
   (let ((token1 (lexer-next-token lexer)))
     (check (number-token? token1) => #t)
     (check (token-lexeme token1) => "123"))
+  ;; 第一个空格
   (let ((token2 (lexer-next-token lexer)))
-    (check (identifier-token? token2) => #t)
-    (check (token-lexeme token2) => "x"))
+    (check (whitespace-token? token2) => #t)
+    (check (token-lexeme token2) => " "))
+  ;; 标识符
   (let ((token3 (lexer-next-token lexer)))
-    (check (number-token? token3) => #t)
-    (check (token-lexeme token3) => "456")))
+    (check (identifier-token? token3) => #t)
+    (check (token-lexeme token3) => "x"))
+  ;; 第二个空格
+  (let ((token4 (lexer-next-token lexer)))
+    (check (whitespace-token? token4) => #t)
+    (check (token-lexeme token4) => " "))
+  ;; 第二个数字
+  (let ((token5 (lexer-next-token lexer)))
+    (check (number-token? token5) => #t)
+    (check (token-lexeme token5) => "456")))
 
 ;; ============================================
 ;; 边界测试
@@ -231,24 +253,40 @@
   (let ((token3 (lexer-next-token lexer)))
     (check (eof-token? token3) => #t)))
 
-;; 混合进制数字测试
+;; 混合进制数字测试（包含WHITESPACE token）
 (let ((lexer (make-lexer "#b101 #o777 #xff 123")))
+  ;; 第一个数字
   (let ((token1 (lexer-next-token lexer)))
     (check (number-token? token1) => #t)
     (check (token-lexeme token1) => "#b101")
     (check (token-value token1) => 5))
+  ;; 第一个空格
   (let ((token2 (lexer-next-token lexer)))
-    (check (number-token? token2) => #t)
-    (check (token-lexeme token2) => "#o777")
-    (check (token-value token2) => 511))
+    (check (whitespace-token? token2) => #t)
+    (check (token-lexeme token2) => " "))
+  ;; 第二个数字
   (let ((token3 (lexer-next-token lexer)))
     (check (number-token? token3) => #t)
-    (check (token-lexeme token3) => "#xff")
-    (check (token-value token3) => 255))
+    (check (token-lexeme token3) => "#o777")
+    (check (token-value token3) => 511))
+  ;; 第二个空格
   (let ((token4 (lexer-next-token lexer)))
-    (check (number-token? token4) => #t)
-    (check (token-lexeme token4) => "123")
-    (check (token-value token4) => 123)))
+    (check (whitespace-token? token4) => #t)
+    (check (token-lexeme token4) => " "))
+  ;; 第三个数字
+  (let ((token5 (lexer-next-token lexer)))
+    (check (number-token? token5) => #t)
+    (check (token-lexeme token5) => "#xff")
+    (check (token-value token5) => 255))
+  ;; 第三个空格
+  (let ((token6 (lexer-next-token lexer)))
+    (check (whitespace-token? token6) => #t)
+    (check (token-lexeme token6) => " "))
+  ;; 第四个数字
+  (let ((token7 (lexer-next-token lexer)))
+    (check (number-token? token7) => #t)
+    (check (token-lexeme token7) => "123")
+    (check (token-value token7) => 123)))
 
 ;; ============================================
 ;; 生成测试报告

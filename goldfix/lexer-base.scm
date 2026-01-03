@@ -158,27 +158,50 @@
           (cond
            ((and ch (char-whitespace? ch))
             (if (char=? ch #\newline)
-                ;; 遇到换行符，生成 NEWLINE token
-                (let ((lexeme (string ch))
-                      (start-line (lexer-line lexer))
-                      (start-column (lexer-column lexer))
-                      (start-offset (lexer-offset lexer))
-                      (start-indent (lexer-indent lexer))
-                      (start-leading-ws (lexer-leading-ws lexer)))
-                  (next-char! lexer)  ; 跳过换行符
-                  ;; 重置前导空格，因为新的一行开始了
-                  (set-lexer-leading-ws! lexer "")
-                  ;; 返回 NEWLINE token
-                  (make-token 'NEWLINE
-                             lexeme
-                             start-line
-                             start-column
-                             start-offset
-                             start-indent
-                             #f
-                             start-leading-ws
-                             #t
-                             #f))
+                ;; 遇到换行符，先检查是否有累积的前导空格需要生成 WHITESPACE token
+                (let ((ws (lexer-leading-ws lexer)))
+                  (if (> (string-length ws) 0)
+                      ;; 有前导空格，先生成 WHITESPACE token
+                      (let ((ws-lexeme ws)
+                            (ws-start-line (lexer-line lexer))
+                            (ws-start-column (- (lexer-column lexer) (string-length ws)))
+                            (ws-start-offset (- (lexer-offset lexer) (string-length ws)))
+                            (ws-start-indent (lexer-indent lexer))
+                            (ws-start-leading-ws ""))
+                        ;; 重置前导空格
+                        (set-lexer-leading-ws! lexer "")
+                        ;; 返回 WHITESPACE token，下次循环会处理换行符
+                        (make-token 'WHITESPACE
+                                   ws-lexeme
+                                   ws-start-line
+                                   ws-start-column
+                                   ws-start-offset
+                                   ws-start-indent
+                                   #f
+                                   ws-start-leading-ws
+                                   #t
+                                   #f))
+                      ;; 没有前导空格，直接生成 NEWLINE token
+                      (let ((lexeme (string ch))
+                            (start-line (lexer-line lexer))
+                            (start-column (lexer-column lexer))
+                            (start-offset (lexer-offset lexer))
+                            (start-indent (lexer-indent lexer))
+                            (start-leading-ws (lexer-leading-ws lexer)))
+                        (next-char! lexer)  ; 跳过换行符
+                        ;; 重置前导空格，因为新的一行开始了
+                        (set-lexer-leading-ws! lexer "")
+                        ;; 返回 NEWLINE token
+                        (make-token 'NEWLINE
+                                   lexeme
+                                   start-line
+                                   start-column
+                                   start-offset
+                                   start-indent
+                                   #f
+                                   start-leading-ws
+                                   #t
+                                   #f))))
                 ;; 普通空白字符，收集到前导空格中
                 (begin
                   (if collecting-ws?
