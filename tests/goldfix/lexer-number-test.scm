@@ -109,17 +109,17 @@
 ;; 测试 9: 错误处理（非数字字符）
 (let ((lexer (make-lexer "abc")))
   (let ((token (lexer-next-token lexer)))
-    (check (token-type token) => 'ERROR)
-    (check (token-lexeme token) => "a")
-    (check (token-has-error? token) => #t)))
+    (check (identifier-token? token) => #t)
+    (check (token-lexeme token) => "abc")
+    (check (token-has-error? token) => #f)))
 
-;; 测试 10: 混合内容（数字和错误）
+;; 测试 10: 混合内容（数字和标识符）
 (let ((lexer (make-lexer "123 x 456")))
   (let ((token1 (lexer-next-token lexer)))
     (check (number-token? token1) => #t)
     (check (token-lexeme token1) => "123"))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)
+    (check (identifier-token? token2) => #t)
     (check (token-lexeme token2) => "x"))
   (let ((token3 (lexer-next-token lexer)))
     (check (number-token? token3) => #t)
@@ -216,12 +216,10 @@
     (check (token-lexeme token1) => "#x1")  ; 只读到有效的部分
     (check (token-value token1) => 1))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)   ; g 不是有效字符
-    (check (token-lexeme token2) => "g"))
+    (check (identifier-token? token2) => #t)   ; g2 是标识符
+    (check (token-lexeme token2) => "g2"))
   (let ((token3 (lexer-next-token lexer)))
-    (check (token-type token3) => 'NUMBER)  ; 2 是有效的十进制数字
-    (check (token-lexeme token3) => "2")
-    (check (token-value token3) => 2)))
+    (check (eof-token? token3) => #t)))
 
 ;; 混合进制数字测试
 (let ((lexer (make-lexer "#b101 #o777 #xff 123")))

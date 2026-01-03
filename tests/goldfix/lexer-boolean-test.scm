@@ -120,13 +120,13 @@
     (check (token-lexeme token) => "#")
     (check (token-has-error? token) => #t)))
 
-;; 测试 12: 混合内容（布尔值和错误）
+;; 测试 12: 混合内容（布尔值和标识符）
 (let ((lexer (make-lexer "#t x #f")))
   (let ((token1 (lexer-next-token lexer)))
     (check (boolean-token? token1) => #t)
     (check (token-lexeme token1) => "#t"))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)
+    (check (identifier-token? token2) => #t)
     (check (token-lexeme token2) => "x"))
   (let ((token3 (lexer-next-token lexer)))
     (check (boolean-token? token3) => #t)
@@ -203,7 +203,7 @@
     (check (token-lexeme token1) => "#t")
     (check (token-value token1) => #t))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)
+    (check (identifier-token? token2) => #t)
     (check (token-lexeme token2) => "x")))
 
 ;; 边界测试 2: 布尔值后跟数字 (#t123)
@@ -230,7 +230,7 @@
     (check (token-lexeme token) => "#t")
     (check (token-value token) => #t))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)
+    (check (identifier-token? token2) => #t)
     (check (token-lexeme token2) => "r")))
 
 ;; 边界测试 5: #false 的部分匹配 (#fal)
@@ -240,11 +240,10 @@
     (check (token-lexeme token) => "#f")
     (check (token-value token) => #f))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)
-    (check (token-lexeme token2) => "a"))
+    (check (identifier-token? token2) => #t)
+    (check (token-lexeme token2) => "al"))
   (let ((token3 (lexer-next-token lexer)))
-    (check (token-type token3) => 'ERROR)
-    (check (token-lexeme token3) => "l")))
+    (check (eof-token? token3) => #t)))
 
 ;; 边界测试 6: #true 后跟其他字符 (#truex)
 (let ((lexer (make-lexer "#truex")))
@@ -253,7 +252,7 @@
     (check (token-lexeme token1) => "#true")
     (check (token-value token1) => #t))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)
+    (check (identifier-token? token2) => #t)
     (check (token-lexeme token2) => "x")))
 
 ;; 边界测试 7: #false 后跟其他字符 (#falsey)
@@ -263,7 +262,7 @@
     (check (token-lexeme token1) => "#false")
     (check (token-value token1) => #f))
   (let ((token2 (lexer-next-token lexer)))
-    (check (token-type token2) => 'ERROR)
+    (check (identifier-token? token2) => #t)
     (check (token-lexeme token2) => "y")))
 
 ;; ============================================

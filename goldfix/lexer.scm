@@ -16,13 +16,15 @@
           token?
           eof-token?
           number-token?
-          boolean-token?)
+          boolean-token?
+          identifier-token?)
 
   (import (scheme base)
           (scheme char)
           (goldfix lexer-base)
           (goldfix lexer-number)
-          (goldfix lexer-boolean))
+          (goldfix lexer-boolean)
+          (goldfix lexer-identifier))
 
   (begin
     ;; 重新导出基础模块的函数
@@ -41,6 +43,9 @@
     (define eof-token? eof-token?)
     (define number-token? number-token?)
     (define boolean-token? boolean-token?)
+
+    ;; 重新导出标识符模块的函数
+    (define identifier-token? identifier-token?)
 
     ;; Lexer 相关函数
     (define make-lexer make-lexer)
@@ -114,23 +119,52 @@
          ((char-numeric? ch)
           (read-number lexer))
          (else
-          (let ((lexeme (string ch))
-                (start-line (lexer-line lexer))
-                (start-column (lexer-column lexer))
-                (start-offset (lexer-offset lexer))
-                (start-indent (lexer-indent lexer))
-                (start-leading-ws (lexer-leading-ws lexer)))
-            (next-char! lexer)
-            (make-token 'ERROR
-                       lexeme
-                       start-line
-                       start-column
-                       start-offset
-                       start-indent
-                       #f
-                       start-leading-ws
-                       #t
-                       #t))))))
+          (let ((identifier-token (read-identifier lexer)))
+            (if identifier-token
+                ;; 数字优先规则：检查标识符是否实际上是数字
+                (let ((lexeme (token-lexeme identifier-token)))
+                  ;; 简单检查：如果 lexeme 全部由数字组成，尝试解析为数字
+                  (if (and (> (string-length lexeme) 0)
+                           (let loop ((i 0))
+                             (if (= i (string-length lexeme))
+                                 #t
+                                 (and (char-numeric? (string-ref lexeme i))
+                                      (loop (+ i 1))))))
+                      (let ((num (string->number lexeme)))
+                        (if num
+                            ;; 创建 NUMBER token 替换原来的 IDENTIFIER token
+                            (make-token 'NUMBER
+                                        lexeme
+                                        (token-line identifier-token)
+                                        (token-column identifier-token)
+                                        (token-offset identifier-token)
+                                        (token-indent identifier-token)
+                                        num
+                                        (token-leading-ws identifier-token)
+                                        #t
+                                        #f)
+                            ;; 解析失败，返回原始标识符 token
+                            identifier-token))
+                      ;; 不是全数字，返回原始标识符 token
+                      identifier-token))
+                ;; 不是标识符，处理为错误
+                (let ((lexeme (string ch))
+                      (start-line (lexer-line lexer))
+                      (start-column (lexer-column lexer))
+                      (start-offset (lexer-offset lexer))
+                      (start-indent (lexer-indent lexer))
+                      (start-leading-ws (lexer-leading-ws lexer)))
+                  (next-char! lexer)
+                  (make-token 'ERROR
+                             lexeme
+                             start-line
+                             start-column
+                             start-offset
+                             start-indent
+                             #f
+                             start-leading-ws
+                             #t
+                             #t))))))))
 
   ) ; end of begin
 ) ; end of define-library
