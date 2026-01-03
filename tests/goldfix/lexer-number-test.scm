@@ -1,8 +1,7 @@
 ;;; lexer-number-test.scm - Goldfix 数字词法分析器单元测试
 
 (import (liii check)
-        (goldfix lexer-base)
-        (goldfix lexer-number))
+        (goldfix lexer))
 
 ;; 设置测试模式
 (check-set-mode! 'report-failed)

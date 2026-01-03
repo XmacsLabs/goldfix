@@ -26,5 +26,9 @@ echo "运行 lexer 测试..."
 echo "运行 lexer-number 测试..."
 "$GOLDFISH_PATH" -m r7rs "$PROJECT_ROOT/tests/goldfix/lexer-number-test.scm"
 
+# 运行 lexer-boolean 测试
+echo "运行 lexer-boolean 测试..."
+"$GOLDFISH_PATH" -m r7rs "$PROJECT_ROOT/tests/goldfix/lexer-boolean-test.scm"
+
 echo ""
 echo "=== 所有测试完成 ==="

@@ -15,11 +15,14 @@
           token-has-error?
           token?
           eof-token?
-          number-token?)
+          number-token?
+          boolean-token?)
 
   (import (scheme base)
+          (scheme char)
           (goldfix lexer-base)
-          (goldfix lexer-number))
+          (goldfix lexer-number)
+          (goldfix lexer-boolean))
 
   (begin
     ;; 重新导出基础模块的函数
@@ -37,9 +40,98 @@
     (define token-has-error? token-has-error?)
     (define eof-token? eof-token?)
     (define number-token? number-token?)
+    (define boolean-token? boolean-token?)
 
     ;; Lexer 相关函数
     (define make-lexer make-lexer)
-    (define lexer-next-token lexer-next-token)
+
+    ;; ============================================
+    ;; 主扫描函数
+    ;; ============================================
+
+    (define (lexer-next-token lexer)
+      (skip-whitespace! lexer)
+      (let ((ch (current-char lexer)))
+        (cond
+         ((not ch)
+          (create-token lexer 'EOF "" #f))
+         ((char=? ch #\#)
+          ;; 检查是布尔值还是数字
+          (let ((next-pos (+ (lexer-position lexer) 1)))
+            (if (< next-pos (string-length (lexer-source lexer)))
+                (let ((next-ch (string-ref (lexer-source lexer) next-pos)))
+                  (cond
+                   ;; 布尔值：后面是 t/T/f/F
+                   ((or (char=? next-ch #\t) (char=? next-ch #\T)
+                        (char=? next-ch #\f) (char=? next-ch #\F))
+                    (read-boolean lexer))
+                   ;; 数字：后面是 b/B/o/O/d/D/x/X
+                   ((or (char=? next-ch #\b) (char=? next-ch #\B)
+                        (char=? next-ch #\o) (char=? next-ch #\O)
+                        (char=? next-ch #\d) (char=? next-ch #\D)
+                        (char=? next-ch #\x) (char=? next-ch #\X))
+                    (read-number lexer))
+                   (else
+                    ;; 无效的 # 前缀
+                    (let ((start-line (lexer-line lexer))
+                          (start-column (lexer-column lexer))
+                          (start-offset (lexer-offset lexer))
+                          (start-indent (lexer-indent lexer))
+                          (start-leading-ws (lexer-leading-ws lexer))
+                          (start-pos (lexer-position lexer)))
+                      (next-char! lexer)  ; 跳过 #
+                      (next-char! lexer)  ; 跳过无效字符
+                      (let ((lexeme (substring (lexer-source lexer)
+                                               start-pos
+                                               (lexer-position lexer))))
+                        (make-token 'ERROR
+                                   lexeme
+                                   start-line
+                                   start-column
+                                   start-offset
+                                   start-indent
+                                   #f
+                                   start-leading-ws
+                                   #t
+                                   #t))))))
+                ;; 只有 # 字符
+                (let ((lexeme (string ch))
+                      (start-line (lexer-line lexer))
+                      (start-column (lexer-column lexer))
+                      (start-offset (lexer-offset lexer))
+                      (start-indent (lexer-indent lexer))
+                      (start-leading-ws (lexer-leading-ws lexer)))
+                  (next-char! lexer)
+                  (make-token 'ERROR
+                             lexeme
+                             start-line
+                             start-column
+                             start-offset
+                             start-indent
+                             #f
+                             start-leading-ws
+                             #t
+                             #t)))))
+         ((char-numeric? ch)
+          (read-number lexer))
+         (else
+          (let ((lexeme (string ch))
+                (start-line (lexer-line lexer))
+                (start-column (lexer-column lexer))
+                (start-offset (lexer-offset lexer))
+                (start-indent (lexer-indent lexer))
+                (start-leading-ws (lexer-leading-ws lexer)))
+            (next-char! lexer)
+            (make-token 'ERROR
+                       lexeme
+                       start-line
+                       start-column
+                       start-offset
+                       start-indent
+                       #f
+                       start-leading-ws
+                       #t
+                       #t))))))
+
   ) ; end of begin
 ) ; end of define-library

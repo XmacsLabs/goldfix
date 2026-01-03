@@ -15,6 +15,7 @@
           token?
           eof-token?
           number-token?
+          boolean-token?
           make-lexer
           lexer?
           lexer-source
@@ -74,6 +75,9 @@
 
     (define (number-token? token)
       (eq? (token-type token) 'NUMBER))
+
+    (define (boolean-token? token)
+      (eq? (token-type token) 'BOOLEAN))
 
     ;; ============================================
     ;; Lexer 记录类型定义

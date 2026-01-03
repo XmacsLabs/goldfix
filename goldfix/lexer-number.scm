@@ -1,8 +1,7 @@
 ;;; lexer-number.scm - Goldfix 数字词法分析器模块
 
 (define-library (goldfix lexer-number)
-  (export lexer-next-token
-          read-number
+  (export read-number
           read-radix-number
           read-decimal-number
           is-radix-digit?)
@@ -167,38 +166,6 @@
                              start-leading-ws
                              #t
                              #t)))))))) ; has-error?
-
-    ;; ============================================
-    ;; 主扫描函数
-    ;; ============================================
-
-    (define (lexer-next-token lexer)
-      (skip-whitespace! lexer)
-      (let ((ch (current-char lexer)))
-        (cond
-         ((not ch)
-          (create-token lexer 'EOF "" #f))
-         ((or (char-numeric? ch) (char=? ch #\#))
-          (read-number lexer))
-         (else
-          ;; 对于非数字字符，生成错误 Token（简化处理）
-          (let ((lexeme (string ch))
-                (start-line (lexer-line lexer))
-                (start-column (lexer-column lexer))
-                (start-offset (lexer-offset lexer))
-                (start-indent (lexer-indent lexer))
-                (start-leading-ws (lexer-leading-ws lexer)))
-            (next-char! lexer)
-            (make-token 'ERROR
-                       lexeme
-                       start-line
-                       start-column
-                       start-offset
-                       start-indent
-                       #f
-                       start-leading-ws
-                       #t
-                       #t))))))
 
   ) ; end of begin
 ) ; end of define-library
