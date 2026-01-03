@@ -19,6 +19,7 @@
           boolean-token?
           identifier-token?
           character-token?
+          string-token?
           left-paren-token?
           right-paren-token?
           newline-token?
@@ -31,6 +32,7 @@
           (goldfix lexer-boolean)
           (goldfix lexer-identifier)
           (goldfix lexer-character)
+          (goldfix lexer-string)
           (goldfix lexer-whitespace)
           (goldfix lexer-newline))
 
@@ -57,6 +59,9 @@
 
     ;; 重新导出字符模块的函数
     (define character-token? character-token?)
+
+    ;; 重新导出字符串模块的函数
+    (define string-token? string-token?)
 
     ;; 重新导出括号 token 函数
     (define left-paren-token? left-paren-token?)
@@ -152,6 +157,9 @@
                              #t)))))
          ((char-numeric? ch)
           (read-number lexer))
+         ((char=? ch #\")
+          ;; 字符串
+          (read-string lexer))
          ((char=? ch #\()
           ;; 左括号
           (let ((lexeme (string ch))

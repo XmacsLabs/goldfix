@@ -113,5 +113,4 @@
 ;; 生成测试报告
 ;; ============================================
 
-(display "Goldfix lexer-whitespace 空白字符场景测试完成\n")
-(check-report)
+(check-report "Goldfix lexer-whitespace 空白字符场景测试完成")

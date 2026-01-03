@@ -582,4 +582,4 @@
 (test-single-character "#\\in" "#\\in" #\i)
 
 ;; 测试总结
-(check-report)
+(check-report "Goldfix lexer-character 空白字符场景测试完成")
