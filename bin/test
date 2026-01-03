@@ -57,5 +57,10 @@ echo ""
 echo "运行 lexer-whitespace 测试..."
 "$GOLDFISH_PATH" -m r7rs "$PROJECT_ROOT/tests/goldfix/lexer-whitespace-test.scm"
 
+# 运行 lexer-comment 测试
+echo ""
+echo "运行 lexer-comment 测试..."
+"$GOLDFISH_PATH" -m r7rs "$PROJECT_ROOT/tests/goldfix/lexer-comment-test.scm"
+
 echo ""
 echo "=== 所有测试完成 ==="

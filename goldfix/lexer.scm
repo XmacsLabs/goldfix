@@ -23,7 +23,8 @@
           left-paren-token?
           right-paren-token?
           newline-token?
-          whitespace-token?)
+          whitespace-token?
+          comment-token?)
 
   (import (scheme base)
           (scheme char)
@@ -34,7 +35,8 @@
           (goldfix lexer-character)
           (goldfix lexer-string)
           (goldfix lexer-whitespace)
-          (goldfix lexer-newline))
+          (goldfix lexer-newline)
+          (goldfix lexer-comment))
 
   (begin
     ;; 重新导出基础模块的函数
@@ -72,6 +74,9 @@
 
     ;; 重新导出 WHITESPACE token 函数
     (define whitespace-token? whitespace-token?)
+
+    ;; 重新导出 COMMENT token 函数
+    (define comment-token? comment-token?)
 
     ;; Lexer 相关函数
     (define make-lexer make-lexer)
@@ -160,6 +165,9 @@
          ((char=? ch #\")
           ;; 字符串
           (read-string lexer))
+         ((char=? ch #\;)
+          ;; 注释
+          (read-comment lexer))
          ((char=? ch #\()
           ;; 左括号
           (let ((lexeme (string ch))
