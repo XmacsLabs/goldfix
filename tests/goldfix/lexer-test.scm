@@ -152,6 +152,97 @@
     (check (token-lexeme token) => ".")))
 
 ;; ============================================
+;; 多进制数字测试
+;; ============================================
+
+;; 二进制数字测试
+(test-single-number "#b1010" "#b1010" 10)
+(test-single-number "#B1101" "#B1101" 13)
+
+;; 八进制数字测试
+(test-single-number "#o777" "#o777" 511)
+(test-single-number "#O123" "#O123" 83)
+
+;; 十进制数字（显式前缀）测试
+(test-single-number "#d456" "#d456" 456)
+(test-single-number "#D789" "#D789" 789)
+
+;; 十六进制数字测试
+(test-single-number "#xff" "#xff" 255)
+(test-single-number "#X1A2B" "#X1A2B" 6699)
+
+;; 无效进制前缀测试
+(let ((lexer (make-lexer "#z123")))
+  (let ((token (lexer-next-token lexer)))
+    (check (token-type token) => 'ERROR)
+    (check (token-lexeme token) => "#z")))
+
+;; 只有 # 前缀测试
+(let ((lexer (make-lexer "#")))
+  (let ((token (lexer-next-token lexer)))
+    (check (token-type token) => 'ERROR)
+    (check (token-lexeme token) => "#")))
+
+;; 二进制无效数字测试
+;; 注意：2 不是有效的二进制数字，所以 lexer 只读取 #b10，2 作为下一个 token
+(let ((lexer (make-lexer "#b102")))
+  (let ((token1 (lexer-next-token lexer)))
+    (check (token-type token1) => 'NUMBER)
+    (check (token-lexeme token1) => "#b10")  ; 只读到有效的部分
+    (check (token-value token1) => 2))
+  (let ((token2 (lexer-next-token lexer)))
+    (check (token-type token2) => 'NUMBER)   ; 2 是有效的十进制数字
+    (check (token-lexeme token2) => "2")
+    (check (token-value token2) => 2)))
+
+;; 八进制无效数字测试
+;; 注意：8 和 9 不是有效的八进制数字，所以 lexer 只读取 #o（没有数字）
+;; 89 作为下一个 token（十进制数字）
+(let ((lexer (make-lexer "#o89")))
+  (let ((token1 (lexer-next-token lexer)))
+    (check (token-type token1) => 'ERROR)    ; 没有有效数字
+    (check (token-lexeme token1) => "#o"))
+  (let ((token2 (lexer-next-token lexer)))
+    (check (token-type token2) => 'NUMBER)   ; 89 是有效的十进制数字
+    (check (token-lexeme token2) => "89")
+    (check (token-value token2) => 89)))
+
+;; 十六进制无效数字测试
+;; 注意：g 不是有效的十六进制数字，所以 lexer 只读取 #x1
+;; g 作为错误 token，2 作为下一个 token（十进制数字）
+(let ((lexer (make-lexer "#x1g2")))
+  (let ((token1 (lexer-next-token lexer)))
+    (check (token-type token1) => 'NUMBER)
+    (check (token-lexeme token1) => "#x1")  ; 只读到有效的部分
+    (check (token-value token1) => 1))
+  (let ((token2 (lexer-next-token lexer)))
+    (check (token-type token2) => 'ERROR)   ; g 不是有效字符
+    (check (token-lexeme token2) => "g"))
+  (let ((token3 (lexer-next-token lexer)))
+    (check (token-type token3) => 'NUMBER)  ; 2 是有效的十进制数字
+    (check (token-lexeme token3) => "2")
+    (check (token-value token3) => 2)))
+
+;; 混合进制数字测试
+(let ((lexer (make-lexer "#b101 #o777 #xff 123")))
+  (let ((token1 (lexer-next-token lexer)))
+    (check (number-token? token1) => #t)
+    (check (token-lexeme token1) => "#b101")
+    (check (token-value token1) => 5))
+  (let ((token2 (lexer-next-token lexer)))
+    (check (number-token? token2) => #t)
+    (check (token-lexeme token2) => "#o777")
+    (check (token-value token2) => 511))
+  (let ((token3 (lexer-next-token lexer)))
+    (check (number-token? token3) => #t)
+    (check (token-lexeme token3) => "#xff")
+    (check (token-value token3) => 255))
+  (let ((token4 (lexer-next-token lexer)))
+    (check (number-token? token4) => #t)
+    (check (token-lexeme token4) => "123")
+    (check (token-value token4) => 123)))
+
+;; ============================================
 ;; 生成测试报告
 ;; ============================================
 
