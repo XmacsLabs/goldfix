@@ -74,7 +74,6 @@ Fixer 在处理 `if` 时，发现它的 `then` 分支缩进是 4，而当前 Tok
 | --- | --- | --- |
 | `LEFT_PAREN` | `(` | 表达式开始 |
 | `RIGHT_PAREN` | `)` | 表达式结束 |
-| `VEC_START` | `#(` | R7RS 向量开始 |
 | `DOT` | `.` | 用于处理不当列表 `(a . b)` |
 | `QUOTE_CHAR` | `'` | 语法糖，等同于 `(quote ...)` |
 | `QUASIQUOTE` | ``` | 反引号，准引用 |
@@ -87,11 +86,12 @@ Fixer 在处理 `if` 时，发现它的 `then` 分支缩进是 4，而当前 Tok
 
 | Token 类型 | 示例 | 说明 |
 | --- | --- | --- |
-| `IDENTIFIER` | `define`, `if+`, ` | var with space` | 标识符，支持空格 |
-| `NUMBER` | `42`, `#x2A`, `3.14` | 各种进制和格式的数字 |
-| `STRING` | `"hello \"world\""` | 处理内部转义的字符串 |
 | `BOOLEAN` | `#t`, `#f`, `#true`, `#false` | R7RS 支持的长短两种形式 |
+| `NUMBER` | `42`, `#x2A`, `3.14` | 各种进制和格式的数字 |
 | `CHARACTER` | `#\space`, `#\a` | 字符型字面量 |
+| `IDENTIFIER` | `define`, `if+`, ` | var with space` | 标识符，支持空格 |
+| `STRING` | `"hello \"world\""` | 处理内部转义的字符串 |
+| `VECTOR` | `#(1 2 3)` | R7RS 向量字面量。整个 `#(...)` 结构作为一个完整的 token，包含向量内的所有元素。 |
 | `BYTEVECTOR` | `#u8(1 2 3)` | R7RS 的字节向量标识 |
 
 ### 3. 元数据与格式 Token (Trivia)
