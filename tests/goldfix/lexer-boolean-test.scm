@@ -73,13 +73,16 @@
     (check (token-value token) => #t)
     (check (token-leading-ws token) => "  ")))
 
-;; 测试 7: 换行后的布尔值
+;; 测试 7: 换行后的布尔值（更新为包含 NEWLINE token）
 (let ((lexer (make-lexer "#t\n#false")))
   (let ((token1 (lexer-next-token lexer)))
     (check (boolean-token? token1) => #t)
     (check (token-lexeme token1) => "#t")
     (check (token-value token1) => #t)
     (check (token-leading-ws token1) => ""))
+  (let ((newline-token (lexer-next-token lexer)))
+    (check (newline-token? newline-token) => #t)
+    (check (token-lexeme newline-token) => "\n"))
   (let ((token2 (lexer-next-token lexer)))
     (check (boolean-token? token2) => #t)
     (check (token-lexeme token2) => "#false")
@@ -97,12 +100,19 @@
     (check (token-column token2) => 4)  ; "#t " 之后
     (check (token-offset token2) => 3)))
 
-;; 测试 9: 缩进信息
+;; 测试 9: 缩进信息（更新为包含 NEWLINE token）
 (let ((lexer (make-lexer "  #t\n  #f")))
   (let ((token1 (lexer-next-token lexer)))
+    (check (boolean-token? token1) => #t)
+    (check (token-lexeme token1) => "#t")
     (check (token-indent token1) => 0)  ; 第一行没有前导空格时 indent 为 0
     (check (token-leading-ws token1) => "  "))
+  (let ((newline-token (lexer-next-token lexer)))
+    (check (newline-token? newline-token) => #t)
+    (check (token-lexeme newline-token) => "\n"))
   (let ((token2 (lexer-next-token lexer)))
+    (check (boolean-token? token2) => #t)
+    (check (token-lexeme token2) => "#f")
     (check (token-indent token2) => 2)  ; 第二行有前导空格，indent 为 2
     (check (token-leading-ws token2) => "  ")))
 

@@ -92,6 +92,9 @@
     (check (left-paren-token? token1) => #t)
     (check (token-lexeme token1) => "(")
     (check (token-leading-ws token1) => ""))
+  (let ((newline-token (lexer-next-token lexer)))
+    (check (newline-token? newline-token) => #t)
+    (check (token-lexeme newline-token) => "\n"))
   (let ((token2 (lexer-next-token lexer)))
     (check (right-paren-token? token2) => #t)
     (check (token-lexeme token2) => ")")
@@ -110,14 +113,19 @@
     (check (token-column token2) => 3)  ; "( " 之后
     (check (token-offset token2) => 2)))
 
-;; 测试 9: 缩进信息
+;; 测试 9: 缩进信息（更新为包含 NEWLINE token）
 (let ((lexer (make-lexer "  (\n  )")))
   (let ((token1 (lexer-next-token lexer)))
     (check (left-paren-token? token1) => #t)
+    (check (token-lexeme token1) => "(")
     (check (token-indent token1) => 0)  ; 第一行没有前导空格时 indent 为 0
     (check (token-leading-ws token1) => "  "))
+  (let ((newline-token (lexer-next-token lexer)))
+    (check (newline-token? newline-token) => #t)
+    (check (token-lexeme newline-token) => "\n"))
   (let ((token2 (lexer-next-token lexer)))
     (check (right-paren-token? token2) => #t)
+    (check (token-lexeme token2) => ")")
     (check (token-indent token2) => 2)  ; 第二行有前导空格，indent 为 2
     (check (token-leading-ws token2) => "  ")))
 
@@ -231,17 +239,26 @@
                         (LEFT_PAREN "(")
                         (RIGHT_PAREN ")")))
 
-;; 边界测试 3: 括号与换行混合
+;; 边界测试 3: 括号与换行混合（更新为包含 NEWLINE token）
 (let ((lexer (make-lexer "(\n)\n(\n)")))
   (let ((token1 (lexer-next-token lexer)))
     (check (left-paren-token? token1) => #t)
     (check (token-line token1) => 1))
+  (let ((newline1 (lexer-next-token lexer)))
+    (check (newline-token? newline1) => #t)
+    (check (token-lexeme newline1) => "\n"))
   (let ((token2 (lexer-next-token lexer)))
     (check (right-paren-token? token2) => #t)
     (check (token-line token2) => 2))
+  (let ((newline2 (lexer-next-token lexer)))
+    (check (newline-token? newline2) => #t)
+    (check (token-lexeme newline2) => "\n"))
   (let ((token3 (lexer-next-token lexer)))
     (check (left-paren-token? token3) => #t)
     (check (token-line token3) => 3))
+  (let ((newline3 (lexer-next-token lexer)))
+    (check (newline-token? newline3) => #t)
+    (check (token-lexeme newline3) => "\n"))
   (let ((token4 (lexer-next-token lexer)))
     (check (right-paren-token? token4) => #t)
     (check (token-line token4) => 4)))

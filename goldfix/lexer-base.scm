@@ -19,6 +19,7 @@
           character-token?
           left-paren-token?
           right-paren-token?
+          newline-token?
           make-lexer
           lexer?
           lexer-source
@@ -91,6 +92,9 @@
     (define (right-paren-token? token)
       (eq? (token-type token) 'RIGHT_PAREN))
 
+    (define (newline-token? token)
+      (eq? (token-type token) 'NEWLINE))
+
     ;; ============================================
     ;; Lexer 记录类型定义
     ;; ============================================
@@ -140,23 +144,51 @@
             #f))
       (current-char lexer))
 
-    ;; 跳过空白字符并收集前导空格
+    ;; 跳过空白字符并收集前导空格，遇到换行符时生成 NEWLINE token
     (define (skip-whitespace! lexer)
-      (let loop ()
+      (let loop ((collecting-ws? #t))
         (let ((ch (current-char lexer)))
           (cond
            ((and ch (char-whitespace? ch))
-            (set-lexer-leading-ws! lexer
-              (string-append (lexer-leading-ws lexer) (string ch)))
-            (next-char! lexer)
-            (loop))
+            (if (char=? ch #\newline)
+                ;; 遇到换行符，生成 NEWLINE token
+                (let ((lexeme (string ch))
+                      (start-line (lexer-line lexer))
+                      (start-column (lexer-column lexer))
+                      (start-offset (lexer-offset lexer))
+                      (start-indent (lexer-indent lexer))
+                      (start-leading-ws (lexer-leading-ws lexer)))
+                  (next-char! lexer)  ; 跳过换行符
+                  ;; 重置前导空格，因为新的一行开始了
+                  (set-lexer-leading-ws! lexer "")
+                  ;; 返回 NEWLINE token
+                  (make-token 'NEWLINE
+                             lexeme
+                             start-line
+                             start-column
+                             start-offset
+                             start-indent
+                             #f
+                             start-leading-ws
+                             #t
+                             #f))
+                ;; 普通空白字符，收集到前导空格中
+                (begin
+                  (if collecting-ws?
+                      (set-lexer-leading-ws! lexer
+                        (string-append (lexer-leading-ws lexer) (string ch)))
+                      (void))
+                  (next-char! lexer)
+                  (loop collecting-ws?))))
            (else
             ;; 设置缩进：对于第一行，indent 总是0
             ;; 对于其他行，indent 是前导空格的长度
             (if (= (lexer-line lexer) 1)
                 (set-lexer-indent! lexer 0)
                 (let ((ws-length (string-length (lexer-leading-ws lexer))))
-                  (set-lexer-indent! lexer ws-length))))))))
+                  (set-lexer-indent! lexer ws-length)))
+            ;; 返回 #f 表示没有生成 token
+            #f)))))
 
     ;; 创建 Token 的辅助函数（用于 EOF 等特殊情况）
     (define (create-token lexer type lexeme literal-value)

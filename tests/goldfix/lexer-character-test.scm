@@ -19,9 +19,15 @@
       (check (token-value token) => expected-value)
       (check (token-terminated? token) => #t)
       (check (token-has-error? token) => #f)
-      ;; 检查 EOF
-      (let ((eof-token (lexer-next-token lexer)))
-        (check (eof-token? eof-token) => #t)))))
+      ;; 检查后续 token（可能是 NEWLINE 然后 EOF，或者直接 EOF）
+      (let loop ()
+        (let ((next-token (lexer-next-token lexer)))
+          (if (or (newline-token? next-token)
+                  (eof-token? next-token))
+              (if (eof-token? next-token)
+                  #t  ; 找到 EOF，测试通过
+                  (loop))  ; 跳过 NEWLINE，继续检查
+              (check #f => #t)))))))  ; 意外的 token，强制测试失败
 
 ;; 测试错误字符
 (define (test-error-character input expected-lexeme)
@@ -29,9 +35,15 @@
     (let ((token (lexer-next-token lexer)))
       (check (token-has-error? token) => #t)
       (check (token-lexeme token) => expected-lexeme)
-      ;; 检查 EOF
-      (let ((eof-token (lexer-next-token lexer)))
-        (check (eof-token? eof-token) => #t)))))
+      ;; 检查后续 token（可能是 NEWLINE 然后 EOF，或者直接 EOF）
+      (let loop ()
+        (let ((next-token (lexer-next-token lexer)))
+          (if (or (newline-token? next-token)
+                  (eof-token? next-token))
+              (if (eof-token? next-token)
+                  #t  ; 找到 EOF，测试通过
+                  (loop))  ; 跳过 NEWLINE，继续检查
+              (check #f => #t)))))))  ; 意外的 token，强制测试失败
 
 ;; 测试多个字符
 (define (test-multiple-characters input expected-tokens)

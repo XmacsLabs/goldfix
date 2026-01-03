@@ -73,13 +73,16 @@
     (check (token-value token) => 42)
     (check (token-leading-ws token) => "   ")))
 
-;; 测试 6: 换行后的数字
+;; 测试 6: 换行后的数字（更新为包含 NEWLINE token）
 (let ((lexer (make-lexer "123\n456")))
   (let ((token1 (lexer-next-token lexer)))
     (check (number-token? token1) => #t)
     (check (token-lexeme token1) => "123")
     (check (token-value token1) => 123)
     (check (token-leading-ws token1) => ""))
+  (let ((newline-token (lexer-next-token lexer)))
+    (check (newline-token? newline-token) => #t)
+    (check (token-lexeme newline-token) => "\n"))
   (let ((token2 (lexer-next-token lexer)))
     (check (number-token? token2) => #t)
     (check (token-lexeme token2) => "456")
@@ -97,12 +100,19 @@
     (check (token-column token2) => 5)  ; "123 " 之后
     (check (token-offset token2) => 4)))
 
-;; 测试 8: 缩进信息
+;; 测试 8: 缩进信息（更新为包含 NEWLINE token）
 (let ((lexer (make-lexer "  123\n  456")))
   (let ((token1 (lexer-next-token lexer)))
+    (check (number-token? token1) => #t)
+    (check (token-lexeme token1) => "123")
     (check (token-indent token1) => 0)  ; 第一行没有前导空格时 indent 为 0
     (check (token-leading-ws token1) => "  "))
+  (let ((newline-token (lexer-next-token lexer)))
+    (check (newline-token? newline-token) => #t)
+    (check (token-lexeme newline-token) => "\n"))
   (let ((token2 (lexer-next-token lexer)))
+    (check (number-token? token2) => #t)
+    (check (token-lexeme token2) => "456")
     (check (token-indent token2) => 2)  ; 第二行有前导空格，indent 为 2
     (check (token-leading-ws token2) => "  ")))
 
