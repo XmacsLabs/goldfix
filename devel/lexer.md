@@ -103,8 +103,7 @@ Fixer 在处理 `if` 时，发现它的 `then` 分支缩进是 4，而当前 Tok
 | `WHITESPACE` | `       ` (空格/Tab) | **核心：** 用于计算缩进，判断 `if/let` 边界 |
 | `NEWLINE` | `\n`, `\r\n` | 标记物理行结束，重置列坐标 |
 | `INLINE_COMMENT` | `; comment` | 确保修复括号时不会插入到注释中间 |
-| `COMMENT_BLOCK` | `# | ... | #` | 多行注释，需要特殊处理嵌套 |
-| `DIRECTIVE` | `#!fold-case` | R7RS 读入器指令 |
+| `BLOCK_COMMENT` | `#| ... |#` | 多行注释，需要特殊处理嵌套 |
 
 ### 4. 容错专用 Token
 

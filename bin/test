@@ -62,5 +62,10 @@ echo ""
 echo "运行 lexer-comment 测试..."
 "$GOLDFISH_PATH" -m r7rs "$PROJECT_ROOT/tests/goldfix/lexer-comment-test.scm"
 
+# 运行 lexer-block-comment 测试
+echo ""
+echo "运行 lexer-block-comment 测试..."
+"$GOLDFISH_PATH" -m r7rs "$PROJECT_ROOT/tests/goldfix/lexer-block-comment-test.scm"
+
 echo ""
 echo "=== 所有测试完成 ==="

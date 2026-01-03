@@ -24,7 +24,9 @@
           right-paren-token?
           newline-token?
           whitespace-token?
-          inline-comment-token?)
+          inline-comment-token?
+          block-comment-token?
+          unterminated-block-comment-token?)
 
   (import (scheme base)
           (scheme char)
@@ -78,6 +80,12 @@
     ;; 重新导出 INLINE_COMMENT token 函数
     (define inline-comment-token? inline-comment-token?)
 
+    ;; 重新导出 BLOCK_COMMENT token 函数
+    (define block-comment-token? block-comment-token?)
+
+    ;; 重新导出 UNTERMINATED_BLOCK_COMMENT token 函数
+    (define unterminated-block-comment-token? unterminated-block-comment-token?)
+
     ;; Lexer 相关函数
     (define make-lexer make-lexer)
 
@@ -102,11 +110,14 @@
                       ;; 理论上不会到达这里，因为 char-whitespace? 为真
                       (create-token lexer 'ERROR " " #f))))))
          ((char=? ch #\#)
-          ;; 检查是布尔值、数字还是字符
+          ;; 检查是布尔值、数字、字符还是块注释
           (let ((next-pos (+ (lexer-position lexer) 1)))
             (if (< next-pos (string-length (lexer-source lexer)))
                 (let ((next-ch (string-ref (lexer-source lexer) next-pos)))
                   (cond
+                   ;; 块注释：后面是 |
+                   ((char=? next-ch #\|)
+                    (read-block-comment lexer))
                    ;; 布尔值：后面是 t/f（小写）
                    ((or (char=? next-ch #\t) (char=? next-ch #\f))
                     (read-boolean lexer))
