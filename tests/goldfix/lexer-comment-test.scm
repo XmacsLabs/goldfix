@@ -15,7 +15,7 @@
 (define (test-single-comment input expected-lexeme)
   (let ((lexer (make-lexer input)))
     (let ((token (lexer-next-token lexer)))
-      (check (comment-token? token) => #t)
+      (check (inline-comment-token? token) => #t)
       (check (token-lexeme token) => expected-lexeme)
       (check (token-value token) => #f)
       (check (token-terminated? token) => #t)
@@ -81,7 +81,7 @@
     (check (token-lexeme ws1) => " "))
   ;; 注释（包含整个 ";comment foo ;bar"）
   (let ((comment (lexer-next-token lexer)))
-    (check (comment-token? comment) => #t)
+    (check (inline-comment-token? comment) => #t)
     (check (token-lexeme comment) => ";comment foo ;bar"))
   ;; EOF
   (let ((eof (lexer-next-token lexer)))
@@ -96,7 +96,7 @@
     (check (token-lexeme ws1) => " "))
   ;; 注释（包含整个 ";num 123 ;456"）
   (let ((comment (lexer-next-token lexer)))
-    (check (comment-token? comment) => #t)
+    (check (inline-comment-token? comment) => #t)
     (check (token-lexeme comment) => ";num 123 ;456"))
   ;; EOF
   (let ((eof (lexer-next-token lexer)))
@@ -111,7 +111,7 @@
     (check (token-lexeme ws1) => " "))
   ;; 注释（包含整个 ";bool #t ;false"）
   (let ((comment (lexer-next-token lexer)))
-    (check (comment-token? comment) => #t)
+    (check (inline-comment-token? comment) => #t)
     (check (token-lexeme comment) => ";bool #t ;false"))
   ;; EOF
   (let ((eof (lexer-next-token lexer)))
@@ -121,7 +121,7 @@
 (let ((lexer (make-lexer "; comment\n")))
   ;; 注释
   (let ((comment (lexer-next-token lexer)))
-    (check (comment-token? comment) => #t)
+    (check (inline-comment-token? comment) => #t)
     (check (token-lexeme comment) => "; comment"))
   ;; 换行符
   (let ((nl (lexer-next-token lexer)))
@@ -135,7 +135,7 @@
 (let ((lexer (make-lexer ";a\n;b\n;c")))
   ;; 第一个注释
   (let ((comment1 (lexer-next-token lexer)))
-    (check (comment-token? comment1) => #t)
+    (check (inline-comment-token? comment1) => #t)
     (check (token-lexeme comment1) => ";a"))
   ;; 第一个换行符
   (let ((nl1 (lexer-next-token lexer)))
@@ -143,7 +143,7 @@
     (check (token-lexeme nl1) => "\n"))
   ;; 第二个注释
   (let ((comment2 (lexer-next-token lexer)))
-    (check (comment-token? comment2) => #t)
+    (check (inline-comment-token? comment2) => #t)
     (check (token-lexeme comment2) => ";b"))
   ;; 第二个换行符
   (let ((nl2 (lexer-next-token lexer)))
@@ -151,7 +151,7 @@
     (check (token-lexeme nl2) => "\n"))
   ;; 第三个注释
   (let ((comment3 (lexer-next-token lexer)))
-    (check (comment-token? comment3) => #t)
+    (check (inline-comment-token? comment3) => #t)
     (check (token-lexeme comment3) => ";c"))
   ;; EOF
   (let ((eof (lexer-next-token lexer)))
@@ -180,7 +180,7 @@
     (check (token-lexeme ws) => "   "))
   ;; 注释
   (let ((comment (lexer-next-token lexer)))
-    (check (comment-token? comment) => #t)
+    (check (inline-comment-token? comment) => #t)
     (check (token-lexeme comment) => ";comment"))
   ;; EOF
   (let ((eof (lexer-next-token lexer)))
@@ -194,7 +194,7 @@
     (check (token-lexeme ws) => "\t"))
   ;; 注释
   (let ((comment (lexer-next-token lexer)))
-    (check (comment-token? comment) => #t)
+    (check (inline-comment-token? comment) => #t)
     (check (token-lexeme comment) => ";comment"))
   ;; EOF
   (let ((eof (lexer-next-token lexer)))
@@ -208,7 +208,7 @@
     (check (token-lexeme ws1) => " "))
   ;; 第一个注释
   (let ((comment1 (lexer-next-token lexer)))
-    (check (comment-token? comment1) => #t)
+    (check (inline-comment-token? comment1) => #t)
     (check (token-lexeme comment1) => ";a"))
   ;; 换行符
   (let ((nl (lexer-next-token lexer)))
@@ -220,7 +220,7 @@
     (check (token-lexeme ws2) => "  "))
   ;; 第二个注释
   (let ((comment2 (lexer-next-token lexer)))
-    (check (comment-token? comment2) => #t)
+    (check (inline-comment-token? comment2) => #t)
     (check (token-lexeme comment2) => ";b"))
   ;; EOF
   (let ((eof (lexer-next-token lexer)))

@@ -24,7 +24,7 @@
           right-paren-token?
           newline-token?
           whitespace-token?
-          comment-token?)
+          inline-comment-token?)
 
   (import (scheme base)
           (scheme char)
@@ -75,8 +75,8 @@
     ;; 重新导出 WHITESPACE token 函数
     (define whitespace-token? whitespace-token?)
 
-    ;; 重新导出 COMMENT token 函数
-    (define comment-token? comment-token?)
+    ;; 重新导出 INLINE_COMMENT token 函数
+    (define inline-comment-token? inline-comment-token?)
 
     ;; Lexer 相关函数
     (define make-lexer make-lexer)

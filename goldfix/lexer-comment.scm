@@ -2,7 +2,7 @@
 
 (define-library (goldfix lexer-comment)
   (export read-comment
-          comment-token?)
+          inline-comment-token?)
 
   (import (scheme base)
           (scheme char)
@@ -37,8 +37,8 @@
               (let ((lexeme (substring (lexer-source lexer)
                                        start-pos
                                        (lexer-position lexer))))
-                ;; 返回 COMMENT_LINE token
-                (let ((token (make-token 'COMMENT_LINE
+                ;; 返回 INLINE_COMMENT token
+                (let ((token (make-token 'INLINE_COMMENT
                                         lexeme
                                         start-line
                                         start-column
@@ -57,9 +57,9 @@
     ;; 注释 token 判断函数
     ;; ============================================
 
-    ;; 判断是否为注释 token
-    (define (comment-token? token)
-      (eq? (token-type token) 'COMMENT_LINE))
+    ;; 判断是否为行内注释 token
+    (define (inline-comment-token? token)
+      (eq? (token-type token) 'INLINE_COMMENT))
 
   ) ; end of begin
 ) ; end of define-library
