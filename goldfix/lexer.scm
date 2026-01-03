@@ -17,14 +17,16 @@
           eof-token?
           number-token?
           boolean-token?
-          identifier-token?)
+          identifier-token?
+          character-token?)
 
   (import (scheme base)
           (scheme char)
           (goldfix lexer-base)
           (goldfix lexer-number)
           (goldfix lexer-boolean)
-          (goldfix lexer-identifier))
+          (goldfix lexer-identifier)
+          (goldfix lexer-character))
 
   (begin
     ;; 重新导出基础模块的函数
@@ -47,6 +49,9 @@
     ;; 重新导出标识符模块的函数
     (define identifier-token? identifier-token?)
 
+    ;; 重新导出字符模块的函数
+    (define character-token? character-token?)
+
     ;; Lexer 相关函数
     (define make-lexer make-lexer)
 
@@ -61,7 +66,7 @@
          ((not ch)
           (create-token lexer 'EOF "" #f))
          ((char=? ch #\#)
-          ;; 检查是布尔值还是数字
+          ;; 检查是布尔值、数字还是字符
           (let ((next-pos (+ (lexer-position lexer) 1)))
             (if (< next-pos (string-length (lexer-source lexer)))
                 (let ((next-ch (string-ref (lexer-source lexer) next-pos)))
@@ -75,6 +80,9 @@
                         (char=? next-ch #\d) (char=? next-ch #\D)
                         (char=? next-ch #\x) (char=? next-ch #\X))
                     (read-number lexer))
+                   ;; 字符：后面是 \
+                   ((char=? next-ch #\\)
+                    (read-character lexer))
                    (else
                     ;; 无效的 # 前缀
                     (let ((start-line (lexer-line lexer))

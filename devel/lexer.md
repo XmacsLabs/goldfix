@@ -79,6 +79,8 @@ Fixer 在处理 `if` 时，发现它的 `then` 分支缩进是 4，而当前 Tok
 | `QUASIQUOTE` | ``` | 反引号，准引用 |
 | `UNQUOTE` | `,` | 逗号，解引用 |
 | `UNQUOTE_SPLICING` | `,@` | 逗号+@，切片解引用 |
+| `VECTOR_MARK` | `#` | `#(1 2 3)`这个向量的前导字符 |
+| `BYTEVECTOR_MARK` | `#u8` |`#u8(1 2 3)`这个字节向量的前导字符 |
 
 ### 2. 字面量与标识符 (Atoms)
 
@@ -91,8 +93,6 @@ Fixer 在处理 `if` 时，发现它的 `then` 分支缩进是 4，而当前 Tok
 | `CHARACTER` | `#\space`, `#\a` | 字符型字面量 |
 | `IDENTIFIER` | `define`, `if+`, ` | var with space` | 标识符，支持空格 |
 | `STRING` | `"hello \"world\""` | 处理内部转义的字符串 |
-| `VECTOR` | `#(1 2 3)` | R7RS 向量字面量。整个 `#(...)` 结构作为一个完整的 token，包含向量内的所有元素。 |
-| `BYTEVECTOR` | `#u8(1 2 3)` | R7RS 的字节向量标识 |
 
 ### 3. 元数据与格式 Token (Trivia)
 
