@@ -18,7 +18,9 @@
           number-token?
           boolean-token?
           identifier-token?
-          character-token?)
+          character-token?
+          left-paren-token?
+          right-paren-token?)
 
   (import (scheme base)
           (scheme char)
@@ -51,6 +53,10 @@
 
     ;; 重新导出字符模块的函数
     (define character-token? character-token?)
+
+    ;; 重新导出括号 token 函数
+    (define left-paren-token? left-paren-token?)
+    (define right-paren-token? right-paren-token?)
 
     ;; Lexer 相关函数
     (define make-lexer make-lexer)
@@ -126,6 +132,44 @@
                              #t)))))
          ((char-numeric? ch)
           (read-number lexer))
+         ((char=? ch #\()
+          ;; 左括号
+          (let ((lexeme (string ch))
+                (start-line (lexer-line lexer))
+                (start-column (lexer-column lexer))
+                (start-offset (lexer-offset lexer))
+                (start-indent (lexer-indent lexer))
+                (start-leading-ws (lexer-leading-ws lexer)))
+            (next-char! lexer)
+            (make-token 'LEFT_PAREN
+                       lexeme
+                       start-line
+                       start-column
+                       start-offset
+                       start-indent
+                       #f
+                       start-leading-ws
+                       #t
+                       #f)))
+         ((char=? ch #\))
+          ;; 右括号
+          (let ((lexeme (string ch))
+                (start-line (lexer-line lexer))
+                (start-column (lexer-column lexer))
+                (start-offset (lexer-offset lexer))
+                (start-indent (lexer-indent lexer))
+                (start-leading-ws (lexer-leading-ws lexer)))
+            (next-char! lexer)
+            (make-token 'RIGHT_PAREN
+                       lexeme
+                       start-line
+                       start-column
+                       start-offset
+                       start-indent
+                       #f
+                       start-leading-ws
+                       #t
+                       #f)))
          (else
           (let ((identifier-token (read-identifier lexer)))
             (if identifier-token

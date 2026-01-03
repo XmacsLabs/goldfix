@@ -17,6 +17,8 @@
           number-token?
           boolean-token?
           character-token?
+          left-paren-token?
+          right-paren-token?
           make-lexer
           lexer?
           lexer-source
@@ -82,6 +84,12 @@
 
     (define (character-token? token)
       (eq? (token-type token) 'CHARACTER))
+
+    (define (left-paren-token? token)
+      (eq? (token-type token) 'LEFT_PAREN))
+
+    (define (right-paren-token? token)
+      (eq? (token-type token) 'RIGHT_PAREN))
 
     ;; ============================================
     ;; Lexer 记录类型定义
