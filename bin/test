@@ -1,0 +1,26 @@
+#!/bin/bash
+# Goldfix 测试运行脚本
+
+set -e  # 遇到错误时退出
+
+GOLDFISH_PATH="/usr/share/liiilabs/plugins/goldfish/bin/goldfish"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+echo "=== 开始运行 Goldfix 测试 ==="
+echo "项目根目录: $PROJECT_ROOT"
+echo "Goldfish 路径: $GOLDFISH_PATH"
+echo ""
+
+# 检查 goldfish 是否存在
+if [ ! -f "$GOLDFISH_PATH" ]; then
+    echo "错误: 找不到 goldfish 解释器"
+    echo "请检查路径: $GOLDFISH_PATH"
+    exit 1
+fi
+
+# 运行 lexer 测试
+echo "运行 lexer 测试..."
+"$GOLDFISH_PATH" -m r7rs "$PROJECT_ROOT/tests/goldfix/lexer-test.scm"
+
+echo ""
+echo "=== 所有测试完成 ==="
