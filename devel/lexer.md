@@ -104,7 +104,6 @@ Fixer 在处理 `if` 时，发现它的 `then` 分支缩进是 4，而当前 Tok
 | `NEWLINE` | `\n`, `\r\n` | 标记物理行结束，重置列坐标 |
 | `COMMENT_LINE` | `; comment` | 确保修复括号时不会插入到注释中间 |
 | `COMMENT_BLOCK` | `# | ... | #` | 多行注释，需要特殊处理嵌套 |
-| `COMMENT_DATUM` | `#;` | **数据注释：** 标记接下来的一个完整表达式被注释掉 |
 | `DIRECTIVE` | `#!fold-case` | R7RS 读入器指令 |
 
 ### 4. 容错专用 Token
