@@ -1,6 +1,7 @@
 ;;; lexer-paren-test.scm - Goldfix 括号词法分析器单元测试
 
 (import (liii check)
+        (liii list)
         (goldfix lexer))
 
 ;; 设置测试模式
@@ -26,8 +27,8 @@
       (let ((eof-token (lexer-next-token lexer)))
         (check (eof-token? eof-token) => #t)))))
 
-;; 测试多个括号
-(define (test-multiple-parens input expected-tokens)
+;; 测试多个括号（包含WHITESPACE token）
+(define (test-multiple-parens input expected-paren-tokens)
   (let ((lexer (make-lexer input))
         (tokens '()))
     (let loop ()
@@ -36,19 +37,24 @@
         (unless (eof-token? token)
           (loop))))
     (let ((actual-tokens (reverse (cdr tokens)))) ; 去掉最后的 EOF
-      (check (length actual-tokens) => (length expected-tokens))
-      (for-each
-       (lambda (actual expected)
-         (let ((expected-type (car expected))
-               (expected-lexeme (cadr expected)))
-           (cond
-             ((eq? expected-type 'LEFT_PAREN)
-              (check (left-paren-token? actual) => #t))
-             ((eq? expected-type 'RIGHT_PAREN)
-              (check (right-paren-token? actual) => #t)))
-           (check (token-lexeme actual) => expected-lexeme)))
-       actual-tokens
-       expected-tokens))))
+      ;; 从实际token中提取括号token
+      (let ((actual-paren-tokens (filter (lambda (token)
+                                           (or (left-paren-token? token)
+                                               (right-paren-token? token)))
+                                         actual-tokens)))
+        (check (length actual-paren-tokens) => (length expected-paren-tokens))
+        (for-each
+         (lambda (actual expected)
+           (let ((expected-type (car expected))
+                 (expected-lexeme (cadr expected)))
+             (cond
+               ((eq? expected-type 'LEFT_PAREN)
+                (check (left-paren-token? actual) => #t))
+               ((eq? expected-type 'RIGHT_PAREN)
+                (check (right-paren-token? actual) => #t)))
+             (check (token-lexeme actual) => expected-lexeme)))
+         actual-paren-tokens
+         expected-paren-tokens)))))
 
 ;; ============================================
 ;; 测试用例开始
@@ -81,10 +87,13 @@
 
 ;; 测试 6: 带前导空格的括号
 (let ((lexer (make-lexer "   (")))
+  (let ((ws-token (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token) => #t)
+    (check (token-lexeme ws-token) => "   "))
   (let ((token (lexer-next-token lexer)))
     (check (left-paren-token? token) => #t)
     (check (token-lexeme token) => "(")
-    (check (token-leading-ws token) => "   ")))
+    (check (token-leading-ws token) => "")))
 
 ;; 测试 7: 换行后的括号
 (let ((lexer (make-lexer "(\n)")))
@@ -107,6 +116,9 @@
     (check (token-line token1) => 1)
     (check (token-column token1) => 1)
     (check (token-offset token1) => 0))
+  (let ((ws-token (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token) => #t)
+    (check (token-lexeme ws-token) => " "))
   (let ((token2 (lexer-next-token lexer)))
     (check (right-paren-token? token2) => #t)
     (check (token-line token2) => 1)
@@ -115,19 +127,25 @@
 
 ;; 测试 9: 缩进信息（更新为包含 NEWLINE token）
 (let ((lexer (make-lexer "  (\n  )")))
+  (let ((ws-token1 (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token1) => #t)
+    (check (token-lexeme ws-token1) => "  "))
   (let ((token1 (lexer-next-token lexer)))
     (check (left-paren-token? token1) => #t)
     (check (token-lexeme token1) => "(")
     (check (token-indent token1) => 0)  ; 第一行没有前导空格时 indent 为 0
-    (check (token-leading-ws token1) => "  "))
+    (check (token-leading-ws token1) => ""))
   (let ((newline-token (lexer-next-token lexer)))
     (check (newline-token? newline-token) => #t)
     (check (token-lexeme newline-token) => "\n"))
+  (let ((ws-token2 (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token2) => #t)
+    (check (token-lexeme ws-token2) => "  "))
   (let ((token2 (lexer-next-token lexer)))
     (check (right-paren-token? token2) => #t)
     (check (token-lexeme token2) => ")")
-    (check (token-indent token2) => 2)  ; 第二行有前导空格，indent 为 2
-    (check (token-leading-ws token2) => "  ")))
+    (check (token-indent token2) => 0)  ; 第二行的前导空格已作为 WHITESPACE token，所以 indent 为 0
+    (check (token-leading-ws token2) => "")))
 
 ;; 测试 10: 括号与标识符的分离
 (let ((lexer (make-lexer "foo(bar)")))
@@ -152,6 +170,9 @@
   (let ((token2 (lexer-next-token lexer)))
     (check (number-token? token2) => #t)
     (check (token-lexeme token2) => "123"))
+  (let ((ws-token (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token) => #t)
+    (check (token-lexeme ws-token) => " "))
   (let ((token3 (lexer-next-token lexer)))
     (check (number-token? token3) => #t)
     (check (token-lexeme token3) => "456"))
@@ -167,6 +188,9 @@
   (let ((token2 (lexer-next-token lexer)))
     (check (boolean-token? token2) => #t)
     (check (token-lexeme token2) => "#t"))
+  (let ((ws-token (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token) => #t)
+    (check (token-lexeme ws-token) => " "))
   (let ((token3 (lexer-next-token lexer)))
     (check (boolean-token? token3) => #t)
     (check (token-lexeme token3) => "#f"))
@@ -182,6 +206,9 @@
   (let ((token2 (lexer-next-token lexer)))
     (check (character-token? token2) => #t)
     (check (token-lexeme token2) => "#\\a"))
+  (let ((ws-token (lexer-next-token lexer)))
+    (check (whitespace-token? ws-token) => #t)
+    (check (token-lexeme ws-token) => " "))
   (let ((token3 (lexer-next-token lexer)))
     (check (character-token? token3) => #t)
     (check (token-lexeme token3) => "#\\b"))
@@ -206,18 +233,20 @@
       ;            (display (token-lexeme token)) (newline))
       ;          actual-tokens
       ;          (iota (length actual-tokens)))
-      (check (length actual-tokens) => 13)  ; 修正为 13
-      ;; 检查关键 token
+      ;; 现在包含 WHITESPACE token，所以 token 数量更多
+      (check (length actual-tokens) => 19)  ; 更新为包含 WHITESPACE token
+      ;; 检查关键 token（跳过 WHITESPACE token）
       (check (left-paren-token? (list-ref actual-tokens 0)) => #t)
       (check (token-lexeme (list-ref actual-tokens 0)) => "(")
       (check (identifier-token? (list-ref actual-tokens 1)) => #t)
       (check (token-lexeme (list-ref actual-tokens 1)) => "define")
-      (check (left-paren-token? (list-ref actual-tokens 2)) => #t)
-      (check (token-lexeme (list-ref actual-tokens 2)) => "(")
-      (check (identifier-token? (list-ref actual-tokens 3)) => #t)
-      (check (token-lexeme (list-ref actual-tokens 3)) => "add")
-      (check (right-paren-token? (list-ref actual-tokens 12)) => #t)  ; 修正索引为 12
-      (check (token-lexeme (list-ref actual-tokens 12)) => ")"))))
+      (check (whitespace-token? (list-ref actual-tokens 2)) => #t)  ; 空格
+      (check (left-paren-token? (list-ref actual-tokens 3)) => #t)  ; 原来是索引2，现在是3
+      (check (token-lexeme (list-ref actual-tokens 3)) => "(")
+      (check (identifier-token? (list-ref actual-tokens 4)) => #t)  ; 原来是索引3，现在是4
+      (check (token-lexeme (list-ref actual-tokens 4)) => "add")
+      (check (right-paren-token? (list-ref actual-tokens 18)) => #t)  ; 原来是索引12，现在是18
+      (check (token-lexeme (list-ref actual-tokens 18)) => ")"))))
 
 ;; ============================================
 ;; 边界测试

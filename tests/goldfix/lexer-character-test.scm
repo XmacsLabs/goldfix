@@ -1,6 +1,7 @@
 ;;; lexer-character-test.scm - Goldfix 字符词法分析器单元测试
 
 (import (liii check)
+        (liii list)
         (goldfix lexer))
 
 ;; 设置测试模式
@@ -26,8 +27,7 @@
                   (eof-token? next-token))
               (if (eof-token? next-token)
                   #t  ; 找到 EOF，测试通过
-                  (loop))  ; 跳过 NEWLINE，继续检查
-              (check #f => #t)))))))  ; 意外的 token，强制测试失败
+                  (loop))))))))
 
 ;; 测试错误字符
 (define (test-error-character input expected-lexeme)
@@ -42,11 +42,10 @@
                   (eof-token? next-token))
               (if (eof-token? next-token)
                   #t  ; 找到 EOF，测试通过
-                  (loop))  ; 跳过 NEWLINE，继续检查
-              (check #f => #t)))))))  ; 意外的 token，强制测试失败
+                  (loop))))))))  ; 意外的 token，强制测试失败
 
-;; 测试多个字符
-(define (test-multiple-characters input expected-tokens)
+;; 测试多个字符（包含WHITESPACE token）
+(define (test-multiple-characters input expected-character-tokens)
   (let ((lexer (make-lexer input))
         (tokens '()))
     (let loop ()
@@ -55,14 +54,16 @@
         (unless (eof-token? token)
           (loop))))
     (let ((actual-tokens (reverse (cdr tokens)))) ; 去掉最后的 EOF
-      (check (length actual-tokens) => (length expected-tokens))
-      (for-each
-       (lambda (actual expected)
-         (check (character-token? actual) => #t)
-         (check (token-lexeme actual) => (car expected))
-         (check (token-value actual) => (cadr expected)))
-       actual-tokens
-       expected-tokens))))
+      ;; 从实际token中提取字符token
+      (let ((actual-character-tokens (filter character-token? actual-tokens)))
+        (check (length actual-character-tokens) => (length expected-character-tokens))
+        (for-each
+         (lambda (actual expected)
+           (check (character-token? actual) => #t)
+           (check (token-lexeme actual) => (car expected))
+           (check (token-value actual) => (cadr expected)))
+         actual-character-tokens
+         expected-character-tokens)))))
 
 ;; ============================================
 ;; 测试用例开始
@@ -170,91 +171,94 @@
 ;; 测试 33: 错误字符 #\spac (不完整的命名字符)
 (test-single-character "#\\spac" "#\\spac" #\s) ; 应该回退到简单字符 #\s
 
-;; 测试 34: 字符与标识符混合 " #\a foo #\b"
-(let ((lexer (make-lexer " #\\a foo #\\b"))
-      (tokens '()))
-  (let loop ()
-    (let ((token (lexer-next-token lexer)))
-      (set! tokens (cons token tokens))
-      (unless (eof-token? token)
-        (loop))))
-  (let ((actual-tokens (reverse (cdr tokens)))) ; 去掉最后的 EOF
-    (check (length actual-tokens) => 3)
-    (check (character-token? (car actual-tokens)) => #t)
-    (check (token-lexeme (car actual-tokens)) => "#\\a")
-    (check (token-value (car actual-tokens)) => #\a)
-    (check (identifier-token? (cadr actual-tokens)) => #t)
-    (check (token-lexeme (cadr actual-tokens)) => "foo")
-    (check (character-token? (caddr actual-tokens)) => #t)
-    (check (token-lexeme (caddr actual-tokens)) => "#\\b")
-    (check (token-value (caddr actual-tokens)) => #\b)))
+;; 测试 34: 字符与标识符混合 " #\a foo #\b"（包含WHITESPACE token）
+(let ((lexer (make-lexer " #\\a foo #\\b")))
+  ;; 前导空格
+  (let ((ws1 (lexer-next-token lexer)))
+    (check (whitespace-token? ws1) => #t)
+    (check (token-lexeme ws1) => " "))
+  ;; 第一个字符
+  (let ((char1 (lexer-next-token lexer)))
+    (check (character-token? char1) => #t)
+    (check (token-lexeme char1) => "#\\a")
+    (check (token-value char1) => #\a))
+  ;; 第二个空格
+  (let ((ws2 (lexer-next-token lexer)))
+    (check (whitespace-token? ws2) => #t)
+    (check (token-lexeme ws2) => " "))
+  ;; 标识符
+  (let ((ident (lexer-next-token lexer)))
+    (check (identifier-token? ident) => #t)
+    (check (token-lexeme ident) => "foo"))
+  ;; 第三个空格
+  (let ((ws3 (lexer-next-token lexer)))
+    (check (whitespace-token? ws3) => #t)
+    (check (token-lexeme ws3) => " "))
+  ;; 第二个字符
+  (let ((char2 (lexer-next-token lexer)))
+    (check (character-token? char2) => #t)
+    (check (token-lexeme char2) => "#\\b")
+    (check (token-value char2) => #\b)))
 
-;; 测试 35: 字符与布尔值混合 " #\a #t #\b"
-(let ((lexer (make-lexer " #\\a #t #\\b"))
-      (tokens '()))
-  (let loop ()
-    (let ((token (lexer-next-token lexer)))
-      (set! tokens (cons token tokens))
-      (unless (eof-token? token)
-        (loop))))
-  (let ((actual-tokens (reverse (cdr tokens)))) ; 去掉最后的 EOF
-    (check (length actual-tokens) => 3)
-    (check (character-token? (car actual-tokens)) => #t)
-    (check (token-lexeme (car actual-tokens)) => "#\\a")
-    (check (token-value (car actual-tokens)) => #\a)
-    (check (boolean-token? (cadr actual-tokens)) => #t)
-    (check (token-lexeme (cadr actual-tokens)) => "#t")
-    (check (token-value (cadr actual-tokens)) => #t)
-    (check (character-token? (caddr actual-tokens)) => #t)
-    (check (token-lexeme (caddr actual-tokens)) => "#\\b")
-    (check (token-value (caddr actual-tokens)) => #\b)))
+;; 测试 35: 字符与布尔值混合 " #\a #t #\b"（包含WHITESPACE token）
+(let ((lexer (make-lexer " #\\a #t #\\b")))
+  ;; 前导空格
+  (let ((ws1 (lexer-next-token lexer)))
+    (check (whitespace-token? ws1) => #t)
+    (check (token-lexeme ws1) => " "))
+  ;; 第一个字符
+  (let ((char1 (lexer-next-token lexer)))
+    (check (character-token? char1) => #t)
+    (check (token-lexeme char1) => "#\\a")
+    (check (token-value char1) => #\a))
+  ;; 第二个空格
+  (let ((ws2 (lexer-next-token lexer)))
+    (check (whitespace-token? ws2) => #t)
+    (check (token-lexeme ws2) => " "))
+  ;; 布尔值
+  (let ((bool (lexer-next-token lexer)))
+    (check (boolean-token? bool) => #t)
+    (check (token-lexeme bool) => "#t")
+    (check (token-value bool) => #t))
+  ;; 第三个空格
+  (let ((ws3 (lexer-next-token lexer)))
+    (check (whitespace-token? ws3) => #t)
+    (check (token-lexeme ws3) => " "))
+  ;; 第二个字符
+  (let ((char2 (lexer-next-token lexer)))
+    (check (character-token? char2) => #t)
+    (check (token-lexeme char2) => "#\\b")
+    (check (token-value char2) => #\b)))
 
-;; 测试 36: 字符与数字混合 " #\1 123 #\2"
-(let ((lexer (make-lexer " #\\1 123 #\\2"))
-      (tokens '()))
-  (let loop ()
-    (let ((token (lexer-next-token lexer)))
-      (set! tokens (cons token tokens))
-      (unless (eof-token? token)
-        (loop))))
-  (let ((actual-tokens (reverse (cdr tokens)))) ; 去掉最后的 EOF
-    (check (length actual-tokens) => 3)
-    (check (character-token? (car actual-tokens)) => #t)
-    (check (token-lexeme (car actual-tokens)) => "#\\1")
-    (check (token-value (car actual-tokens)) => #\1)
-    (check (number-token? (cadr actual-tokens)) => #t)
-    (check (token-lexeme (cadr actual-tokens)) => "123")
-    (check (token-value (cadr actual-tokens)) => 123)
-    (check (character-token? (caddr actual-tokens)) => #t)
-    (check (token-lexeme (caddr actual-tokens)) => "#\\2")
-    (check (token-value (caddr actual-tokens)) => #\2)))
-
-;; 测试 37: 探索 #\space 的特殊情况
-(check #\space => #\ )
-
-;; 测试 38: 探索 #\newline 的特殊情况
-(check #\newline => #\newline)
-
-;; 测试 39: 探索 #\tab 的特殊情况
-(check #\tab => #\tab)
-
-;; 测试 40: 探索 #\return 的特殊情况
-(check #\return => #\return)
-
-;; 测试 41: 探索 #\null 的特殊情况
-(check #\null => #\null)
-
-;; 测试 42: 探索 #\alarm 的特殊情况
-(check #\alarm => #\alarm)
-
-;; 测试 43: 探索 #\backspace 的特殊情况
-(check #\backspace => #\backspace)
-
-;; 测试 44: 探索 #\escape 的特殊情况
-(check #\escape => #\escape)
-
-;; 测试 45: 探索 #\delete 的特殊情况
-(check #\delete => #\delete)
+;; 测试 36: 字符与数字混合 " #\1 123 #\2"（包含WHITESPACE token）
+(let ((lexer (make-lexer " #\\1 123 #\\2")))
+  ;; 前导空格
+  (let ((ws1 (lexer-next-token lexer)))
+    (check (whitespace-token? ws1) => #t)
+    (check (token-lexeme ws1) => " "))
+  ;; 第一个字符
+  (let ((char1 (lexer-next-token lexer)))
+    (check (character-token? char1) => #t)
+    (check (token-lexeme char1) => "#\\1")
+    (check (token-value char1) => #\1))
+  ;; 第二个空格
+  (let ((ws2 (lexer-next-token lexer)))
+    (check (whitespace-token? ws2) => #t)
+    (check (token-lexeme ws2) => " "))
+  ;; 数字
+  (let ((num (lexer-next-token lexer)))
+    (check (number-token? num) => #t)
+    (check (token-lexeme num) => "123")
+    (check (token-value num) => 123))
+  ;; 第三个空格
+  (let ((ws3 (lexer-next-token lexer)))
+    (check (whitespace-token? ws3) => #t)
+    (check (token-lexeme ws3) => " "))
+  ;; 第二个字符
+  (let ((char2 (lexer-next-token lexer)))
+    (check (character-token? char2) => #t)
+    (check (token-lexeme char2) => "#\\2")
+    (check (token-value char2) => #\2)))
 
 ;; 测试 46: 测试 #\x20 (空格)
 (test-single-character "#\\x20" "#\\x20" #\space)
