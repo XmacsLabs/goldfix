@@ -21,7 +21,8 @@
           character-token?
           left-paren-token?
           right-paren-token?
-          newline-token?)
+          newline-token?
+          whitespace-token?)
 
   (import (scheme base)
           (scheme char)
@@ -62,6 +63,9 @@
     ;; 重新导出 NEWLINE token 函数
     (define newline-token? newline-token?)
 
+    ;; 重新导出 WHITESPACE token 函数
+    (define whitespace-token? whitespace-token?)
+
     ;; Lexer 相关函数
     (define make-lexer make-lexer)
 
@@ -70,10 +74,10 @@
     ;; ============================================
 
     (define (lexer-next-token lexer)
-      (let ((newline-token (skip-whitespace! lexer)))
-        (if newline-token
-            ;; skip-whitespace! 返回了一个 NEWLINE token
-            newline-token
+      (let ((ws-token (skip-whitespace! lexer)))
+        (if ws-token
+            ;; skip-whitespace! 返回了一个 WHITESPACE 或 NEWLINE token
+            ws-token
             ;; 继续处理其他 token
             (let ((ch (current-char lexer)))
               (cond

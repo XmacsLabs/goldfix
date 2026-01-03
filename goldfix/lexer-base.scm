@@ -20,6 +20,7 @@
           left-paren-token?
           right-paren-token?
           newline-token?
+          whitespace-token?
           make-lexer
           lexer?
           lexer-source
@@ -36,6 +37,8 @@
           set-lexer-indent!
           lexer-leading-ws
           set-lexer-leading-ws!
+          lexer-tab-width
+          set-lexer-tab-width!
           current-char
           next-char!
           skip-whitespace!
@@ -95,13 +98,16 @@
     (define (newline-token? token)
       (eq? (token-type token) 'NEWLINE))
 
+    (define (whitespace-token? token)
+      (eq? (token-type token) 'WHITESPACE))
+
     ;; ============================================
     ;; Lexer 记录类型定义
     ;; ============================================
 
     (define-record-type <lexer>
       (make-lexer-internal source position line column offset indent-level
-                           leading-ws)
+                           leading-ws tab-width)
       lexer?
       (source lexer-source set-lexer-source!)        ;; 字符串：源代码
       (position lexer-position set-lexer-position!)  ;; 整数：当前位置
@@ -109,11 +115,12 @@
       (column lexer-column set-lexer-column!)        ;; 整数：当前列号
       (offset lexer-offset set-lexer-offset!)        ;; 整数：文件绝对位置
       (indent-level lexer-indent set-lexer-indent!)  ;; 整数：当前缩进级别
-      (leading-ws lexer-leading-ws set-lexer-leading-ws!)) ;; 字符串：累积的前导空格
+      (leading-ws lexer-leading-ws set-lexer-leading-ws!) ;; 字符串：累积的前导空格
+      (tab-width lexer-tab-width set-lexer-tab-width!)) ;; 整数：Tab 宽度（默认 2）
 
     ;; 创建词法分析器
     (define (make-lexer source)
-      (make-lexer-internal source 0 1 1 0 0 ""))
+      (make-lexer-internal source 0 1 1 0 0 "" 2))
 
     ;; ============================================
     ;; 辅助函数
