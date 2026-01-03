@@ -61,9 +61,8 @@
             (if (< next-pos (string-length (lexer-source lexer)))
                 (let ((next-ch (string-ref (lexer-source lexer) next-pos)))
                   (cond
-                   ;; 布尔值：后面是 t/T/f/F
-                   ((or (char=? next-ch #\t) (char=? next-ch #\T)
-                        (char=? next-ch #\f) (char=? next-ch #\F))
+                   ;; 布尔值：后面是 t/f（小写）
+                   ((or (char=? next-ch #\t) (char=? next-ch #\f))
                     (read-boolean lexer))
                    ;; 数字：后面是 b/B/o/O/d/D/x/X
                    ((or (char=? next-ch #\b) (char=? next-ch #\B)

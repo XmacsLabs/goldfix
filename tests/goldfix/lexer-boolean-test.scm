@@ -46,24 +46,24 @@
 ;; 测试用例开始
 ;; ============================================
 
-;; 测试 1: #t (小写)
+;; 测试 1: #t
 (test-single-boolean "#t" "#t" #t)
 
-;; 测试 2: #T (大写)
-(test-single-boolean "#T" "#T" #t)
+;; 测试 2: #true
+(test-single-boolean "#true" "#true" #t)
 
-;; 测试 3: #f (小写)
+;; 测试 3: #f
 (test-single-boolean "#f" "#f" #f)
 
-;; 测试 4: #F (大写)
-(test-single-boolean "#F" "#F" #f)
+;; 测试 4: #false
+(test-single-boolean "#false" "#false" #f)
 
 ;; 测试 5: 多个布尔值
-(test-multiple-booleans "#t #f #T #F"
+(test-multiple-booleans "#t #f #true #false"
                         '(("#t" #t)
                           ("#f" #f)
-                          ("#T" #t)
-                          ("#F" #f)))
+                          ("#true" #t)
+                          ("#false" #f)))
 
 ;; 测试 6: 带前导空格的布尔值
 (let ((lexer (make-lexer "  #t")))
@@ -74,7 +74,7 @@
     (check (token-leading-ws token) => "  ")))
 
 ;; 测试 7: 换行后的布尔值
-(let ((lexer (make-lexer "#t\n#f")))
+(let ((lexer (make-lexer "#t\n#false")))
   (let ((token1 (lexer-next-token lexer)))
     (check (boolean-token? token1) => #t)
     (check (token-lexeme token1) => "#t")
@@ -82,7 +82,7 @@
     (check (token-leading-ws token1) => ""))
   (let ((token2 (lexer-next-token lexer)))
     (check (boolean-token? token2) => #t)
-    (check (token-lexeme token2) => "#f")
+    (check (token-lexeme token2) => "#false")
     (check (token-value token2) => #f)
     (check (token-leading-ws token2) => "")))
 
@@ -152,7 +152,7 @@
     (check (token-value token3) => #f)))
 
 ;; 测试 14: 布尔值和多进制数字混合
-(let ((lexer (make-lexer "#t #b101 #f #xff")))
+(let ((lexer (make-lexer "#t #b101 #false #xff")))
   (let ((token1 (lexer-next-token lexer)))
     (check (boolean-token? token1) => #t)
     (check (token-lexeme token1) => "#t")
@@ -163,7 +163,7 @@
     (check (token-value token2) => 5))
   (let ((token3 (lexer-next-token lexer)))
     (check (boolean-token? token3) => #t)
-    (check (token-lexeme token3) => "#f")
+    (check (token-lexeme token3) => "#false")
     (check (token-value token3) => #f))
   (let ((token4 (lexer-next-token lexer)))
     (check (number-token? token4) => #t)
@@ -181,11 +181,11 @@
     (check (token-lexeme token2) => "#b101")
     (check (token-value token2) => 5)))
 
-;; 测试 16: 区分布尔值和数字 (#f vs #xff)
-(let ((lexer (make-lexer "#f#xff")))
+;; 测试 16: 区分布尔值和数字 (#false vs #xff)
+(let ((lexer (make-lexer "#false#xff")))
   (let ((token1 (lexer-next-token lexer)))
     (check (boolean-token? token1) => #t)
-    (check (token-lexeme token1) => "#f")
+    (check (token-lexeme token1) => "#false")
     (check (token-value token1) => #f))
   (let ((token2 (lexer-next-token lexer)))
     (check (number-token? token2) => #t)
@@ -217,15 +217,54 @@
     (check (token-lexeme token2) => "123")
     (check (token-value token2) => 123)))
 
-;; 边界测试 3: 大写布尔值后跟小写 (#Tf)
-(let ((lexer (make-lexer "#Tf")))
+;; 边界测试 3: 大写 T 不是布尔值 (#T)
+(let ((lexer (make-lexer "#T")))
+  (let ((token (lexer-next-token lexer)))
+    (check (token-type token) => 'ERROR)
+    (check (token-lexeme token) => "#T")))
+
+;; 边界测试 4: #true 的部分匹配 (#tr)
+(let ((lexer (make-lexer "#tr")))
+  (let ((token (lexer-next-token lexer)))
+    (check (boolean-token? token) => #t)
+    (check (token-lexeme token) => "#t")
+    (check (token-value token) => #t))
+  (let ((token2 (lexer-next-token lexer)))
+    (check (token-type token2) => 'ERROR)
+    (check (token-lexeme token2) => "r")))
+
+;; 边界测试 5: #false 的部分匹配 (#fal)
+(let ((lexer (make-lexer "#fal")))
+  (let ((token (lexer-next-token lexer)))
+    (check (boolean-token? token) => #t)
+    (check (token-lexeme token) => "#f")
+    (check (token-value token) => #f))
+  (let ((token2 (lexer-next-token lexer)))
+    (check (token-type token2) => 'ERROR)
+    (check (token-lexeme token2) => "a"))
+  (let ((token3 (lexer-next-token lexer)))
+    (check (token-type token3) => 'ERROR)
+    (check (token-lexeme token3) => "l")))
+
+;; 边界测试 6: #true 后跟其他字符 (#truex)
+(let ((lexer (make-lexer "#truex")))
   (let ((token1 (lexer-next-token lexer)))
     (check (boolean-token? token1) => #t)
-    (check (token-lexeme token1) => "#T")
+    (check (token-lexeme token1) => "#true")
     (check (token-value token1) => #t))
   (let ((token2 (lexer-next-token lexer)))
     (check (token-type token2) => 'ERROR)
-    (check (token-lexeme token2) => "f")))
+    (check (token-lexeme token2) => "x")))
+
+;; 边界测试 7: #false 后跟其他字符 (#falsey)
+(let ((lexer (make-lexer "#falsey")))
+  (let ((token1 (lexer-next-token lexer)))
+    (check (boolean-token? token1) => #t)
+    (check (token-lexeme token1) => "#false")
+    (check (token-value token1) => #f))
+  (let ((token2 (lexer-next-token lexer)))
+    (check (token-type token2) => 'ERROR)
+    (check (token-lexeme token2) => "y")))
 
 ;; ============================================
 ;; 生成测试报告
